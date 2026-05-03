@@ -24,6 +24,11 @@ jobs:
         run: |
           mkdir -p docs
           find . -name "*.cs3" -exec cp {} docs/ \;
+      - name: Generate index
+        run: gradle generatePluginIndex || true
+      - name: Copy index
+        run: |
+          find . -name "index.json" | head -1 | xargs -I{} cp {} docs/ || echo "No index found"
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
