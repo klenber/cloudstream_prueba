@@ -1,10 +1,10 @@
 [
     {
-        "iconUrl": "https://www.google.com/s2/favicons?domain=animelatinohd.com&sz=%size%",
-        "fileHash": "sha256-78ceadf2a618ddbe779c90c1d73d7dc437ac7d50c069bf77c810cb727a2e9bd2",
+        "iconUrl": "https://www.google.com/s2/favicons?domain=animelhd.com&sz=%size%",
+        "fileHash": "sha256-db1e7f453471c5ac6e7a1451541654fbf3d498a5c83f5d2a641657fb736b54db",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/klenber/cloudstream_prueba",
-        "fileSize": 15881,
+        "fileSize": 20548,
         "status": 1,
         "language": "es",
         "authors": [

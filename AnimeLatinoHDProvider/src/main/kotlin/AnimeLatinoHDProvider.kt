@@ -19,23 +19,25 @@ class AnimeLatinoHDProviderPlugin : BasePlugin() {
 
 class AnimeLatinoHDProvider : MainAPI() {
 
-    override var mainUrl = "https://www.animelatinohd.com"
-    override var name = "AnimeLatinoHD"
+    override var mainUrl = "https://animelhd.com"
+    override var name = "AnimeLHD"
     override var lang = "es"
     override val hasMainPage = true
     override val usesWebView = true
     override val supportedTypes = setOf(TvType.Anime)
 
     override val mainPage = mainPageOf(
-        "$mainUrl/animes" to "Animes",
-        "$mainUrl/latino" to "Latino",
-        "$mainUrl/castellano" to "Castellano",
-        "$mainUrl/populares" to "Populares"
+        mainUrl to "Inicio",
+        "$mainUrl/series/" to "Series",
+        "$mainUrl/category/accion/" to "Accion",
+        "$mainUrl/category/fantasia/" to "Fantasia",
+        "$mainUrl/category/romance/" to "Romance",
+        "$mainUrl/category/comedia/" to "Comedia"
     )
 
     private val cloudflareResolver by lazy {
         WebViewResolver(
-            Regex("""https://www\.animelatinohd\.com/(?!cdn-cgi/).*"""),
+            Regex("""https://(?:www\.)?(?:animelatinohd\.com|animelhd\.com)/(?!cdn-cgi/).*"""),
             userAgent = null,
             useOkhttp = false
         )
@@ -63,7 +65,16 @@ class AnimeLatinoHDProvider : MainAPI() {
         val title = document.titleFromPage() ?: return null
         val poster = document.imageFromPage()
         val description = document.descriptionFromPage()
-        val episodes = document.select("a[href*=/ver/]").mapNotNull { it.toEpisode() }
+        val episodeDocuments = if (url.contains("/series/")) {
+            document.seasonUrls().mapNotNull { seasonUrl ->
+                runCatching { getDocument(seasonUrl) }.getOrNull()
+            }
+        } else {
+            emptyList()
+        }
+        val episodes = (listOf(document) + episodeDocuments)
+            .flatMap { it.episodeElements() }
+            .mapNotNull { it.toEpisode() }
             .distinctBy { it.data }
             .sortedWith(compareBy<Episode> { it.episode ?: Int.MAX_VALUE }.thenBy { it.name })
             .ifEmpty { listOfNotNull(url.toEpisodeFromUrl()) }
@@ -82,15 +93,19 @@ class AnimeLatinoHDProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val document = getDocument(data)
-        val embeds = document.select("iframe[src], iframe[data-src]").mapNotNull {
-            it.attr("src").ifBlank { it.attr("data-src") }
-                .takeIf { src -> src.isNotBlank() }
-                ?.let { src -> fixUrlNull(src) }
-        }.distinct()
+        val embeds = document.embedUrls()
 
         var found = false
         embeds.forEach { embed ->
             if (loadExtractor(embed, subtitleCallback, callback)) found = true
+            if (embed.startsWith(mainUrl)) {
+                val nestedEmbeds = runCatching {
+                    app.get(embed, referer = data).document.embedUrls()
+                }.getOrDefault(emptyList())
+                nestedEmbeds.forEach { nested ->
+                    if (loadExtractor(nested, subtitleCallback, callback)) found = true
+                }
+            }
         }
         return found
     }
@@ -115,23 +130,24 @@ class AnimeLatinoHDProvider : MainAPI() {
 
     private fun Document.toSearchResponses(): List<SearchResponse> {
         val containers = select(
-            "article, div.item, div.result-item, div.post, li:has(a[href*=/ver/]), li:has(a[href*=/anime/])"
+            "div.TPostMv, div.TPost, article, div.item, div.result-item, div.post, tr:has(a[href*=/ver/]), li:has(a[href*=/ver/]), li:has(a[href*=/series/])"
         ).mapNotNull { it.toSearchResponse() }
 
         return containers.ifEmpty {
-            select("a[href*=/anime/], a[href*=/ver/]").mapNotNull { it.toSearchResponse() }
+            select("a[href*=/series/], a[href*=/ver/]").mapNotNull { it.toSearchResponse() }
         }.distinctBy { it.url }
     }
 
     private fun Element.toSearchResponse(): SearchResponse? {
-        val anchor = if (tagName() == "a") this else selectFirst("a[href*=/anime/], a[href*=/ver/]")
+        val anchor = if (tagName() == "a") this else selectFirst("a[href*=/series/], a[href*=/ver/]")
             ?: return null
-        val href = fixUrlNull(anchor.attr("href")) ?: return null
-        if (!href.contains("/anime/") && !href.contains("/ver/")) return null
+        val href = anchor.attr("href").toAbsoluteUrl() ?: return null
+        if (!href.contains("/series/") && !href.contains("/ver/")) return null
 
         val scope = if (tagName() == "a") parent() ?: this else this
         val title = listOfNotNull(
-            scope.selectFirst("h1, h2, h3, .title, .entry-title")?.text(),
+            scope.selectFirst("h1, h2.Title, .Title, h2, h3, .title, .entry-title")?.ownText(),
+            scope.selectFirst("h1, h2.Title, .Title, h2, h3, .title, .entry-title")?.text(),
             anchor.attr("title"),
             scope.selectFirst("img")?.attr("alt"),
             anchor.text()
@@ -146,11 +162,17 @@ class AnimeLatinoHDProvider : MainAPI() {
     }
 
     private fun Element.toEpisode(): Episode? {
-        val href = fixUrlNull(attr("href")) ?: return null
-        val episodeNumber = Regex("""/ver/[^/]+/(\d+)""").find(href)?.groupValues?.getOrNull(1)?.toIntOrNull()
-        val label = listOf(attr("title"), text())
+        val anchor = if (tagName() == "a") this else selectFirst("a[href*=/ver/]")
+            ?: return null
+        val href = anchor.attr("href").toAbsoluteUrl() ?: return null
+        val episodeNumber = Regex("""(?i)episodio-(\d+)""").find(href)?.groupValues?.getOrNull(1)?.toIntOrNull()
+            ?: selectFirst(".Num")?.text()?.cleanText()?.toIntOrNull()
+        val label = listOfNotNull(
+            selectFirst(".MvTbTtl a")?.text(),
+            anchor.attr("title"),
+            anchor.text()
+        )
             .firstNotNullOfOrNull { it.cleanText().takeIf(String::isNotBlank) }
-            ?.cleanAnimeTitle()
         return newEpisode(href) {
             name = label ?: episodeNumber?.let { "Episodio $it" } ?: "Episodio"
             episode = episodeNumber
@@ -158,7 +180,7 @@ class AnimeLatinoHDProvider : MainAPI() {
     }
 
     private fun String.toEpisodeFromUrl(): Episode? {
-        val episodeNumber = Regex("""/ver/[^/]+/(\d+)""").find(this)?.groupValues?.getOrNull(1)?.toIntOrNull()
+        val episodeNumber = Regex("""(?i)episodio-(\d+)""").find(this)?.groupValues?.getOrNull(1)?.toIntOrNull()
             ?: return null
         return newEpisode(this) {
             name = "Episodio $episodeNumber"
@@ -176,22 +198,46 @@ class AnimeLatinoHDProvider : MainAPI() {
 
     private fun Document.descriptionFromPage(): String? {
         return listOfNotNull(
+            selectFirst("meta[property=og:description]")?.attr("content"),
             selectFirst("meta[name=description]")?.attr("content"),
-            selectFirst(".sinopsis, .description, .entry-content p, p")?.text()
+            selectFirst(".Description p, .sinopsis, .description, .entry-content p, p")?.text()
         ).firstNotNullOfOrNull { it.cleanText().takeIf(String::isNotBlank) }
     }
 
     private fun Document.imageFromPage(): String? {
         return listOfNotNull(
             selectFirst("meta[property=og:image]")?.attr("content"),
-            selectFirst(".poster img, .image img, article img, img")?.imageUrl()
-        ).firstNotNullOfOrNull { fixUrlNull(it)?.takeIf(String::isNotBlank) }
+            selectFirst(".TPostBg, .poster img, .Image img, .image img, article img, img")?.imageUrl()
+        ).firstNotNullOfOrNull { it.toAbsoluteUrl()?.takeIf(String::isNotBlank) }
+    }
+
+    private fun Document.seasonUrls(): List<String> {
+        return select("a[href*=/mirar/]").mapNotNull {
+            it.attr("href").toAbsoluteUrl()
+        }.distinct()
+    }
+
+    private fun Document.episodeElements(): List<Element> {
+        return select("tr:has(a[href*=/ver/]), a[href*=/ver/]")
+    }
+
+    private fun Document.embedUrls(): List<String> {
+        val iframeUrls = select("iframe[src], iframe[data-src]").mapNotNull {
+            it.attr("src").ifBlank { it.attr("data-src") }.toAbsoluteUrl()
+        }
+        val optionUrls = select("[data-id][data-key]").mapNotNull {
+            val id = it.attr("data-id").takeIf(String::isNotBlank) ?: return@mapNotNull null
+            val key = it.attr("data-key").takeIf(String::isNotBlank) ?: return@mapNotNull null
+            val type = if (it.attr("data-typ").equals("movie", ignoreCase = true)) "1" else "2"
+            "$mainUrl/?trembed=$key&trid=$id&trtype=$type"
+        }
+        return (iframeUrls + optionUrls).distinct()
     }
 
     private fun Element.imageUrl(): String? {
         return listOf("data-src", "data-lazy-src", "src")
             .firstNotNullOfOrNull { attr(it).takeIf(String::isNotBlank) }
-            ?.let { fixUrlNull(it) }
+            ?.toAbsoluteUrl()
     }
 
     private fun String.toPagedUrl(page: Int): String {
@@ -204,9 +250,21 @@ class AnimeLatinoHDProvider : MainAPI() {
 
     private fun String.cleanAnimeTitle(): String {
         return cleanText()
+            .removePrefix("Image ")
+            .replace(Regex("""^\d{2}-\d{2}-\d{4}\s+"""), "")
             .replace(Regex("""(?i)\s*(?:cap.tulo|episodio)\s*\d+.*$"""), "")
             .replace(Regex("""(?i)\s*sub\s*espa.ol.*$"""), "")
             .replace(Regex("""(?i)\s*online\s*.*$"""), "")
+            .replace(Regex("""(?i)\s+serie$"""), "")
             .trim()
+    }
+
+    private fun String.toAbsoluteUrl(): String? {
+        val url = cleanText()
+        if (url.isBlank() || url == "#") return null
+        return when {
+            url.startsWith("//") -> "https:$url"
+            else -> fixUrlNull(url)
+        }
     }
 }
