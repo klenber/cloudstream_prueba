@@ -20,15 +20,23 @@ jobs:
           gradle-version: '8.12'
       - name: Build plugins
         run: gradle makePlugins
-      - name: Collect plugins
+      - name: Collect plugins and generate index
         run: |
           mkdir -p docs
           find . -name "*.cs3" -exec cp {} docs/ \;
-      - name: Generate index
-        run: gradle generatePluginIndex || true
-      - name: Copy index
-        run: |
-          find . -name "index.json" | head -1 | xargs -I{} cp {} docs/ || echo "No index found"
+          echo '{"plugins":[' > docs/index.json
+          first=true
+          for f in docs/*.cs3; do
+            name=$(basename "$f" .cs3)
+            if [ "$first" = true ]; then
+              first=false
+            else
+              echo ',' >> docs/index.json
+            fi
+            echo "{\"url\":\"https://klenber.github.io/cloudstream_prueba/${name}.cs3\",\"name\":\"${name}\"}" >> docs/index.json
+          done
+          echo ']}' >> docs/index.json
+          cat docs/index.json
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
