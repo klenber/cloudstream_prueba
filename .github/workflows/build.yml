@@ -14,10 +14,12 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.12'
       - name: Build plugins
-        run: ./gradlew makePlugins
+        run: gradle makePlugins
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
