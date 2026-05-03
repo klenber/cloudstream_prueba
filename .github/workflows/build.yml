@@ -20,14 +20,12 @@ jobs:
           gradle-version: '8.12'
       - name: Build plugins
         run: gradle makePlugins
-      - name: List output files
+      - name: Collect plugins
         run: |
-          echo "=== CS3 files ==="
-          find . -name "*.cs3" 2>/dev/null
-          echo "=== Build folders ==="
-          find . -path "*/build/outputs*" -type d 2>/dev/null
+          mkdir -p docs
+          find . -name "*.cs3" -exec cp {} docs/ \;
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: builds/outputs/plugins
+          folder: docs
           branch: gh-pages
