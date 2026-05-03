@@ -21,7 +21,11 @@ jobs:
       - name: Build plugins
         run: gradle makePlugins
       - name: List output files
-        run: find . -name "*.cs3" -o -name "*.zip" | head -20
+        run: |
+          echo "=== CS3 files ==="
+          find . -name "*.cs3" 2>/dev/null
+          echo "=== Build folders ==="
+          find . -path "*/build/outputs*" -type d 2>/dev/null
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
