@@ -1,1 +1,9 @@
-{"name":"CloudstreamPrueba","iconUrl":"","description":"Repositorio de prueba","manifestVersion":1,"pluginLists":["https://klenber.github.io/cloudstream_prueba/plugins.json"]}
+{
+    "name": "CloudstreamPrueba",
+    "iconUrl": "",
+    "description": "Repositorio de AnimeLatinoHD para Cloudstream",
+    "manifestVersion": 1,
+    "pluginLists": [
+        "https://klenber.github.io/cloudstream_prueba/plugins.json"
+    ]
+}

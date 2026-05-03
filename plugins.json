@@ -1,1 +1,21 @@
-[{"url":"https://klenber.github.io/cloudstream_prueba/AnimeLatinoHDProvider.cs3","name":"AnimeLatinoHDProvider","internalName":"AnimeLatinoHDProvider","version":1,"authors":["klenber"],"repositoryUrl":"https://github.com/klenber/cloudstream_prueba","status":1,"tvTypes":["Anime"],"language":"es"},{"url":"https://klenber.github.io/cloudstream_prueba/DailymotionProvider.cs3","name":"DailymotionProvider","internalName":"DailymotionProvider","version":1,"authors":["klenber"],"repositoryUrl":"https://github.com/klenber/cloudstream_prueba","status":1,"tvTypes":["Anime"],"language":"es"},{"url":"https://klenber.github.io/cloudstream_prueba/TwitchProvider.cs3","name":"TwitchProvider","internalName":"TwitchProvider","version":1,"authors":["klenber"],"repositoryUrl":"https://github.com/klenber/cloudstream_prueba","status":1,"tvTypes":["Anime"],"language":"es"}]
+[
+    {
+        "iconUrl": "https://www.google.com/s2/favicons?domain=animelatinohd.com&sz=%size%",
+        "fileHash": "sha256-9653eb7130d669a70f894d18a52a4cddf883bab2d6ca9f6daea5722464607765",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/klenber/cloudstream_prueba",
+        "fileSize": 15879,
+        "status": 1,
+        "language": "es",
+        "authors": [
+            "klenber"
+        ],
+        "tvTypes": [
+            "Anime"
+        ],
+        "version": 1,
+        "internalName": "AnimeLatinoHDProvider",
+        "url": "https://klenber.github.io/cloudstream_prueba/AnimeLatinoHDProvider.cs3",
+        "name": "AnimeLatinoHDProvider"
+    }
+]
