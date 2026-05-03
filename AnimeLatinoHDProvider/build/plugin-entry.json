@@ -1,0 +1,19 @@
+{
+    "iconUrl": "https://www.google.com/s2/favicons?domain=animelatinohd.com&sz=%size%",
+    "fileHash": "sha256-78ceadf2a618ddbe779c90c1d73d7dc437ac7d50c069bf77c810cb727a2e9bd2",
+    "apiVersion": 1,
+    "repositoryUrl": "https://github.com/klenber/cloudstream_prueba",
+    "fileSize": 15881,
+    "status": 1,
+    "language": "es",
+    "authors": [
+        "klenber"
+    ],
+    "tvTypes": [
+        "Anime"
+    ],
+    "version": 1,
+    "internalName": "AnimeLatinoHDProvider",
+    "url": "https://raw.githubusercontent.com/klenber/cloudstream_prueba/builds/AnimeLatinoHDProvider.cs3",
+    "name": "AnimeLatinoHDProvider"
+}

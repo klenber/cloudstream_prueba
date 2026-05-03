@@ -1,0 +1,22 @@
+{
+    "iconUrl": "https://www.google.com/s2/favicons?domain=www.dailymotion.com&sz=%size%",
+    "jarFileSize": 49791,
+    "fileHash": "sha256-9036525a64e8b3c8fe04f94e9fe89a744c13d69af684ed0d2ad2a7eb0f332cd9",
+    "apiVersion": 1,
+    "repositoryUrl": "https://github.com/user/repo",
+    "fileSize": 11472,
+    "status": 1,
+    "authors": [
+        "Luna712"
+    ],
+    "tvTypes": [
+        "Others"
+    ],
+    "version": 4,
+    "internalName": "DailymotionProvider",
+    "jarUrl": "https://raw.githubusercontent.com/user/repo/builds/DailymotionProvider.jar",
+    "description": "Watch content from Dailymotion",
+    "url": "https://raw.githubusercontent.com/user/repo/builds/DailymotionProvider.cs3",
+    "name": "DailymotionProvider",
+    "jarHash": "sha256-542c325f2e1e1f61db60952d161325b62ff58712b1b2020e6df50727fdd03bf2"
+}

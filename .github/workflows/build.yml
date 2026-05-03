@@ -18,20 +18,41 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: '8.12'
-      - name: Build plugins
-        run: gradle makePlugins
-      - name: Collect plugins and generate index
+      - name: Build plugins and index
         run: |
+          gradle --no-daemon --console=plain makePluginsJson
           mkdir -p docs
-          find . -name "*.cs3" -exec cp {} docs/ \;
-          plugins=""
-          for f in docs/*.cs3; do
-            name=$(basename "$f" .cs3)
-            plugins="${plugins}{\"url\":\"https://klenber.github.io/cloudstream_prueba/${name}.cs3\",\"name\":\"${name}\",\"internalName\":\"${name}\",\"version\":1,\"authors\":[\"klenber\"],\"repositoryUrl\":\"https://github.com/klenber/cloudstream_prueba\",\"status\":1,\"tvTypes\":[\"Anime\"],\"language\":\"es\"},"
-          done
-          plugins="${plugins%,}"
-          echo "[${plugins}]" > docs/plugins.json
-          printf '{"name":"CloudstreamPrueba","iconUrl":"","description":"Repositorio de prueba","manifestVersion":1,"pluginLists":["https://klenber.github.io/cloudstream_prueba/plugins.json"]}' > docs/repo.json
+          cp build/plugins.json docs/plugins.json
+          find . -maxdepth 3 -path "*/build/*.cs3" -exec cp {} docs/ \;
+          find . -maxdepth 3 -path "*/build/*.jar" -exec cp {} docs/ \;
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          repo = os.environ["GITHUB_REPOSITORY"]
+          owner, name = repo.split("/", 1)
+          pages_url = f"https://{owner}.github.io/{name}"
+          repo_url = f"https://github.com/{repo}"
+          plugins_path = Path("docs/plugins.json")
+
+          plugins = json.loads(plugins_path.read_text(encoding="utf-8"))
+          for plugin in plugins:
+              internal_name = plugin["internalName"]
+              plugin["repositoryUrl"] = repo_url
+              plugin["url"] = f"{pages_url}/{internal_name}.cs3"
+              if "jarUrl" in plugin:
+                  plugin["jarUrl"] = f"{pages_url}/{internal_name}.jar"
+
+          plugins_path.write_text(json.dumps(plugins, ensure_ascii=False, indent=4), encoding="utf-8")
+          Path("docs/repo.json").write_text(json.dumps({
+              "name": "CloudstreamPrueba",
+              "iconUrl": "",
+              "description": "Repositorio de AnimeLatinoHD para Cloudstream",
+              "manifestVersion": 1,
+              "pluginLists": [f"{pages_url}/plugins.json"],
+          }, ensure_ascii=False, indent=4), encoding="utf-8")
+          PY
           cat docs/repo.json
           cat docs/plugins.json
       - name: Deploy to GitHub Pages

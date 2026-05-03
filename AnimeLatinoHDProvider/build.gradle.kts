@@ -2,7 +2,7 @@ version = 1
 
 cloudstream {
     language = "es"
-    authors = listOf("TuNombre")
+    authors = listOf("klenber")
 
     status = 1
 
