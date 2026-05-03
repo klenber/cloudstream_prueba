@@ -27,11 +27,13 @@ jobs:
           plugins=""
           for f in docs/*.cs3; do
             name=$(basename "$f" .cs3)
-            plugins="${plugins}{\"url\":\"https://klenber.github.io/cloudstream_prueba/${name}.cs3\",\"name\":\"${name}\",\"internalName\":\"${name}\",\"version\":1,\"authors\":[\"klenber\"],\"repositoryUrl\":\"https://github.com/klenber/cloudstream_prueba\",\"status\":1,\"tvTypes\":[\"Anime\"],\"language\":\"es\",\"iconUrl\":\"https://www.google.com/s2/favicons?domain=animelatinohd.com&sz=32\"},"
+            plugins="${plugins}{\"url\":\"https://klenber.github.io/cloudstream_prueba/${name}.cs3\",\"name\":\"${name}\",\"internalName\":\"${name}\",\"version\":1,\"authors\":[\"klenber\"],\"repositoryUrl\":\"https://github.com/klenber/cloudstream_prueba\",\"status\":1,\"tvTypes\":[\"Anime\"],\"language\":\"es\"},"
           done
           plugins="${plugins%,}"
-          printf '{"name":"CloudstreamPrueba","description":"Repositorio de prueba","manifestVersion":1,"pluginLists":[{"url":"https://klenber.github.io/cloudstream_prueba/index.json","name":"All plugins"}],"plugins":[%s]}' "$plugins" > docs/index.json
-          cat docs/index.json
+          echo "[${plugins}]" > docs/plugins.json
+          printf '{"name":"CloudstreamPrueba","iconUrl":"","description":"Repositorio de prueba","manifestVersion":1,"pluginLists":["https://klenber.github.io/cloudstream_prueba/plugins.json"]}' > docs/repo.json
+          cat docs/repo.json
+          cat docs/plugins.json
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
