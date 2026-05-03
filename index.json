@@ -1,0 +1,7 @@
+{"plugins":[
+{"url":"https://klenber.github.io/cloudstream_prueba/AnimeLatinoHDProvider.cs3","name":"AnimeLatinoHDProvider"}
+,
+{"url":"https://klenber.github.io/cloudstream_prueba/DailymotionProvider.cs3","name":"DailymotionProvider"}
+,
+{"url":"https://klenber.github.io/cloudstream_prueba/TwitchProvider.cs3","name":"TwitchProvider"}
+]}
