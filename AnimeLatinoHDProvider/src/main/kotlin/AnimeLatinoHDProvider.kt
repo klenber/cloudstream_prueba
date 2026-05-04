@@ -97,13 +97,17 @@ class AnimeLatinoHDProvider : MainAPI() {
 
         var found = false
         embeds.forEach { embed ->
-            if (loadExtractor(embed, subtitleCallback, callback)) found = true
+            runCatching {
+                if (loadExtractor(embed, data, subtitleCallback, callback)) found = true
+            }
             if (embed.startsWith(mainUrl)) {
                 val nestedEmbeds = runCatching {
                     app.get(embed, referer = data).document.embedUrls()
                 }.getOrDefault(emptyList())
                 nestedEmbeds.forEach { nested ->
-                    if (loadExtractor(nested, subtitleCallback, callback)) found = true
+                    runCatching {
+                        if (loadExtractor(nested, embed, subtitleCallback, callback)) found = true
+                    }
                 }
             }
         }
@@ -131,14 +135,25 @@ class AnimeLatinoHDProvider : MainAPI() {
     private fun Document.toSearchResponses(): List<SearchResponse> {
         val containers = select(
             "div.TPostMv, div.TPost, article, div.item, div.result-item, div.post, tr:has(a[href*=/ver/]), li:has(a[href*=/ver/]), li:has(a[href*=/series/])"
-        ).mapNotNull { it.toSearchResponse() }
+        ).filter { element ->
+            // CAMBIO 1: Filtrar animes marcados como "Próximamente"
+            val text = element.text().lowercase()
+            !text.contains("próximamente") && !text.contains("proximamente") && !text.contains("coming soon")
+        }.mapNotNull { it.toSearchResponse() }
 
         return containers.ifEmpty {
-            select("a[href*=/series/], a[href*=/ver/]").mapNotNull { it.toSearchResponse() }
+            select("a[href*=/series/], a[href*=/ver/]").filter { element ->
+                val text = element.text().lowercase()
+                !text.contains("próximamente") && !text.contains("proximamente")
+            }.mapNotNull { it.toSearchResponse() }
         }.distinctBy { it.url }
     }
 
     private fun Element.toSearchResponse(): SearchResponse? {
+        // CAMBIO 2: Ignorar elementos con "próximamente"
+        val elementText = text().lowercase()
+        if (elementText.contains("próximamente") || elementText.contains("proximamente")) return null
+
         val anchor = if (tagName() == "a") this else selectFirst("a[href*=/series/], a[href*=/ver/]")
             ?: return null
         val href = anchor.attr("href").toAbsoluteUrl() ?: return null
@@ -222,8 +237,10 @@ class AnimeLatinoHDProvider : MainAPI() {
     }
 
     private fun Document.embedUrls(): List<String> {
-        val iframeUrls = select("iframe[src], iframe[data-src]").mapNotNull {
-            it.attr("src").ifBlank { it.attr("data-src") }.toAbsoluteUrl()
+        // CAMBIO 3: Mejorar extracción de embeds con más selectores
+        val iframeUrls = select("iframe[src], iframe[data-src], iframe[data-lazy-src]").mapNotNull {
+            (it.attr("src").ifBlank { it.attr("data-src") }.ifBlank { it.attr("data-lazy-src") })
+                .toAbsoluteUrl()
         }
         val optionUrls = select("[data-id][data-key]").mapNotNull {
             val id = it.attr("data-id").takeIf(String::isNotBlank) ?: return@mapNotNull null
@@ -231,7 +248,13 @@ class AnimeLatinoHDProvider : MainAPI() {
             val type = if (it.attr("data-typ").equals("movie", ignoreCase = true)) "1" else "2"
             "$mainUrl/?trembed=$key&trid=$id&trtype=$type"
         }
-        return (iframeUrls + optionUrls).distinct()
+        // CAMBIO 4: También buscar scripts con URLs de video
+        val scriptUrls = select("script").mapNotNull { script ->
+            val content = script.data()
+            Regex("""(?:file|src|source)\s*:\s*['"]([^'"]+(?:m3u8|mp4)[^'"]*)['"]""")
+                .find(content)?.groupValues?.getOrNull(1)?.toAbsoluteUrl()
+        }
+        return (iframeUrls + optionUrls + scriptUrls).distinct()
     }
 
     private fun Element.imageUrl(): String? {
